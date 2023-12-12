@@ -18,7 +18,14 @@ public class Ground : MonoBehaviour
     // Start is called before the first frame update
     void Start()
     {
-        
+        spriteRenderer = GetComponent<SpriteRenderer>();
+
+        cloneTexture = Instantiate(baseTexture);
+        cloneTexture.alphaIsTransparency = true;
+
+        UpdateTexture();
+
+        gameObject.AddComponent<PolygonCollider2D>();
     }
 
     public float WidthWorld
@@ -35,7 +42,7 @@ public class Ground : MonoBehaviour
     {
         get
         {
-            if(_heightWorld == 0)
+            if (_heightWorld == 0)
                 _heightWorld = spriteRenderer.bounds.size.y;
             return _heightWorld;
         }
@@ -67,5 +74,6 @@ public class Ground : MonoBehaviour
             new Rect(0, 0, cloneTexture.width, cloneTexture.height),
             new Vector2(0.5f, 0.5f), 50f);
     }
+}
 
 
