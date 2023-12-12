@@ -37,12 +37,14 @@ public class PlayerControler : MonoBehaviour
     // Update is called once per frame
     void Update()
     {
-        //if (!isTurn)
-          //  return;
+        if (!isTurn)
+            return;
 
         RotateGun();
 
         MovementAndShooting();
+
+        SetAnimationState();
     }
 
     void RotateGun() {
@@ -61,7 +63,6 @@ public class PlayerControler : MonoBehaviour
         if (hor == 0)
         {
             currentGun.gameObject.SetActive(true);
-            anim.SetBool("IsWalking", false);
 
             if (Input.GetKeyDown(KeyCode.Q))
             {
@@ -87,8 +88,31 @@ public class PlayerControler : MonoBehaviour
             transform.position += Vector3.right * hor * Time.deltaTime * walkSpeed;
 
             spriteRenderer.flipX = Input.GetAxis("Horizontal") > 0;
-            anim.SetBool("IsWalking", true);
+            
         }
     }
+
+    void SetAnimationState()
+    {
+        float hor = Input.GetAxis("Horizontal");
+
+        Debug.Log("Horizontal input: " + hor);
+
+        if (hor == 0)
+        {
+            anim.SetBool("IsWalking", false);
+        }
+        else
+        {
+            anim.SetBool("IsWalking", true);
+            Vector3 headPosition = currentGun.position;
+            headPosition.x += 0.1f; // Puedes ajustar este valor según tus necesidades
+        }
+
+        Debug.Log("IsWalking: " + anim.GetBool("IsWalking"));
+    }
+
+    
+
 
 }
