@@ -23,13 +23,15 @@ public class PlayerControler : MonoBehaviour
     private Camera mainCam;
 
     public bool isTurn{ get { return WormManager.instance.IsMyTurn(wormID); } }
-    //WormHealth wormHealth;
+    private WormHealth wormHealth;
 
     private Vector3 diff;
 
     void Start()
     {
         spriteRenderer = GetComponent<SpriteRenderer>();
+
+        wormHealth = GetComponent<WormHealth>();
         mainCam = Camera.main;
         anim = GetComponent<Animator>();
     }
@@ -112,7 +114,16 @@ public class PlayerControler : MonoBehaviour
         Debug.Log("IsWalking: " + anim.GetBool("IsWalking"));
     }
 
-    
+    private void OnTriggerEnter2D(Collider2D collision)
+    {
+        if (collision.CompareTag("Bullet"))
+        {
+            wormHealth.ChangeHealth(-10);
+            
+            if(isTurn)
+                WormManager.instance.NextWorm();
+        }
+    }
 
 
 }

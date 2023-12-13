@@ -7,7 +7,7 @@ public class WormManager : MonoBehaviour
 
     public static WormManager instance;
 
-    private WormManager[] worms;
+    private PlayerControler[] worms;
 
     private Transform wormCamera;
 
@@ -30,6 +30,9 @@ public class WormManager : MonoBehaviour
         {
             worms[i].wormID = i;
         }
+
+        NextWorm();
+
     }
 
 
