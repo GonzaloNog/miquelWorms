@@ -9,6 +9,8 @@ public class Ground : MonoBehaviour
 
     private Texture2D cloneTexture;
 
+    public GameObject fire;
+
     private SpriteRenderer spriteRenderer;
 
     private float _widthWorld, _heightWorld;
@@ -91,7 +93,7 @@ public class Ground : MonoBehaviour
     {
         Vector2Int c = World2Pixel(col.bounds.center);
 
-        int r = Mathf.RoundToInt(col.bounds.size.x * WidthPixel / WidthWorld);
+        int r = Mathf.RoundToInt((col.bounds.size.x * WidthPixel / WidthWorld) * 2);
 
         int px, nx, py, ny, d;
 

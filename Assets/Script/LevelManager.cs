@@ -5,6 +5,7 @@ using UnityEngine;
 public class LevelManager : MonoBehaviour
 {
     public static LevelManager instance;
+    public CombatManager combat;
     private void Awake()
     {
         if(instance == null)
@@ -12,4 +13,10 @@ public class LevelManager : MonoBehaviour
         else
             Destroy(gameObject);
     }
+
+    public CombatManager GetCombatManager()
+    {
+        return combat;
+    }
+
 }

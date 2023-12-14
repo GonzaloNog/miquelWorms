@@ -2,6 +2,7 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.UI;
+using TMPro;
 
 public class WormHealth : MonoBehaviour
 {
@@ -10,7 +11,9 @@ public class WormHealth : MonoBehaviour
     public int maxHealth = 100;
 
     [SerializeField]
-    private Text healthTxt;
+    private TextMeshProUGUI healthTxt;
+    [SerializeField]
+    private TextMeshProUGUI name;
 
     // Start is called before the first frame update
     void Start()
@@ -30,5 +33,9 @@ public class WormHealth : MonoBehaviour
 
         healthTxt.text = health.ToString();
 
+    }
+    public void newName(string _name)
+    {
+        name.text = _name;
     }
 }

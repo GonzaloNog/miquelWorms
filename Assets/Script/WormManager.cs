@@ -24,7 +24,7 @@ public class WormManager : MonoBehaviour
     private void Start()
     {
         worms = GameObject.FindObjectsOfType<PlayerControler>();
-        wormCamera = Camera.main.transform;
+       // wormCamera = Camera.main.transform;
 
         for(int i = 0; i < worms.Length; i++)
         {
@@ -58,8 +58,8 @@ public class WormManager : MonoBehaviour
         if (currentWorm >= worms.Length)
             currentWorm = 0;
 
-        wormCamera.SetParent(worms[currentWorm].transform);
-        wormCamera.localPosition = Vector3.zero + Vector3.back * 10f;
+       // wormCamera.SetParent(worms[currentWorm].transform);
+       // wormCamera.localPosition = Vector3.zero + Vector3.back * 10f;
     }
 
 }

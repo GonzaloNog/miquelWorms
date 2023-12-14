@@ -4,16 +4,37 @@ using UnityEngine;
 
 public class CombatManager : MonoBehaviour
 {
-    private int idTurn;
+    public int idTurn = 0;
     private GameObject target;
-    void Start()
+    private GameObject targetCam;
+
+    public PlayerControler[] worms;
+    private void Awake()
     {
-        
+        for(int a = 0; a < worms.Length; a++)
+        {
+            worms[a].name = "Player " + (a + 1);
+        }
+        worms[idTurn].isTurn = true;
+        targetCam = worms[idTurn].gameObject;
     }
 
-    // Update is called once per frame
-    void Update()
+    public IEnumerator ChangeTurn(GameObject shoot)
     {
-        
+        targetCam = shoot;
+        yield return new WaitForSeconds(2f);
+        idTurn++;
+        if(idTurn == worms.Length)
+            idTurn = 0;
+        for (int a = 0; a < worms.Length; a++)
+        {
+            worms[a].isTurn = false;
+        }
+        worms[idTurn].isTurn = true;
+        targetCam = worms[idTurn].gameObject;
+    }
+    public GameObject getTargetCam()
+    {
+        return targetCam;
     }
 }
