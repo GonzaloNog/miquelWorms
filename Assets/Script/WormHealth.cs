@@ -38,4 +38,10 @@ public class WormHealth : MonoBehaviour
     {
         name.text = _name;
     }
+    public void setHealth(int _health)
+    {
+        maxHealth = _health;
+        health = maxHealth;
+        healthTxt.text = health.ToString();
+    }
 }

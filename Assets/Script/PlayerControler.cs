@@ -1,6 +1,7 @@
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.UI;
 
 public class PlayerControler : MonoBehaviour
 {
@@ -13,6 +14,7 @@ public class PlayerControler : MonoBehaviour
     public float walkSpeed = 1.0f;
     public float maxRelativeVelocity = 6.0f;
     public float missileForce = 15.0f;
+    public int life = 100;
     private float missileForceShoot = 0.0f;
     private bool inmune = false;
 
@@ -22,12 +24,14 @@ public class PlayerControler : MonoBehaviour
     private Animator anim;
 
     public int wormID;
+    public int teamID;
 
     private SpriteRenderer spriteRenderer;
 
     private Camera mainCam;
 
     public bool isTurn = false;
+    public bool isLive = true;
     private WormHealth wormHealth;
 
     private Vector3 diff;
@@ -38,6 +42,11 @@ public class PlayerControler : MonoBehaviour
     private int hor2 = 0;
     private float timeWalk;
     private float apuntar;
+    public float[] minShotIA;
+    public float[] minDistanceIA;
+
+    //UI
+    public Slider shootUI;
 
     void Start()
     {
@@ -47,6 +56,9 @@ public class PlayerControler : MonoBehaviour
         mainCam = Camera.main;
         anim = GetComponent<Animator>();
         wormHealth.newName(name);
+        shootUI.gameObject.SetActive(false);
+        shootUI.maxValue = missileForce;
+        wormHealth.setHealth(life);
     }
 
     // Update is called once per frame
@@ -55,70 +67,78 @@ public class PlayerControler : MonoBehaviour
 
         if (isTurn)
         {
-            Debug.Log(mainCam.ScreenToWorldPoint(Input.mousePosition));
-            if (!IA)
+            if (isLive)
             {
-                RotateGun();
-                MovementAndShooting();
-                SetAnimationState();
+                //Debug.Log(mainCam.ScreenToWorldPoint(Input.mousePosition));
+                if (!IA)
+                {
+                    RotateGun();
+                    MovementAndShooting();
+                    SetAnimationState();
+                }
+                else
+                {
+                    if (!iaIsPlay)
+                    {
+                        timeWalk = Random.Range(0.5f, 3f);
+                        StartCoroutine(iaPlayer());
+                        iaIsPlay = true;
+                        apuntar = Random.Range(-180f, 180f);
+
+                        missileForceShoot = Random.Range(0f, missileForce);
+                        int randomInt = Random.Range(1, 101);
+                        if (randomInt > 50)
+                            hor2 = 1;
+                        else
+                            hor2 = -1;
+                    }
+                    switch (state)
+                    {
+                        case "move":
+                            transform.position += Vector3.right * hor2 * Time.deltaTime * walkSpeed;
+                            spriteRenderer.flipX = hor2 > 0;
+                            if (hor2 == 0)
+                            {
+                                anim.SetBool("IsWalking", false);
+                            }
+                            else
+                            {
+                                anim.SetBool("IsWalking", true);
+                                Vector3 headPosition = currentGun.position;
+                                headPosition.x += 0.1f; // Puedes ajustar este valor según tus necesidades
+                            }
+                            break;
+                        case "apuntar":
+                            currentGun.gameObject.SetActive(true);
+                            Vector3 currentRotation = currentGun.transform.eulerAngles;
+
+                            currentRotation.z = apuntar;
+                            currentGun.transform.eulerAngles = currentRotation;
+                            break;
+                        case "shoot":
+                            StartCoroutine(newInmune());
+                            Rigidbody2D bullet = Instantiate(bulletPrefab,
+                                transform.position,
+                                currentGun.rotation);
+
+                            bullet.AddForce(-currentGun.right * missileForceShoot, ForceMode2D.Impulse);
+                            missileForceShoot = 0;
+                            if (isTurn)
+                            {
+                                StartCoroutine(LevelManager.instance.GetCombatManager().ChangeTurn(bullet.gameObject));
+                                isTurn = false;
+                                state = "null";
+                                iaIsPlay = false;
+                            }
+                            break;
+                    }
+                }
             }
             else
             {
-                if (!iaIsPlay)
-                {
-                    timeWalk = Random.Range(0.5f, 3f);
-                    StartCoroutine(iaPlayer());
-                    iaIsPlay = true;
-                    apuntar = Random.Range(-180f, 180f);
-                    missileForceShoot = Random.Range(0f, missileForce);
-                    int randomInt = Random.Range(1, 101);
-                    if (randomInt > 50)
-                        hor2 = 1;
-                    else
-                        hor2 = -1;
-                }
-                switch (state)
-                {
-                    case "move":
-                        transform.position += Vector3.right * hor2 * Time.deltaTime * walkSpeed;
-                        spriteRenderer.flipX = hor2 > 0;
-                        if (hor2 == 0)
-                        {
-                            anim.SetBool("IsWalking", false);
-                        }
-                        else
-                        {
-                            anim.SetBool("IsWalking", true);
-                            Vector3 headPosition = currentGun.position;
-                            headPosition.x += 0.1f; // Puedes ajustar este valor según tus necesidades
-                        }
-                        break;
-                    case "apuntar":
-                        currentGun.gameObject.SetActive(true);
-                        Vector3 currentRotation = currentGun.transform.eulerAngles;
+                LevelManager.instance.GetCombatManager().TurnChangeDead();
 
-                        currentRotation.z = apuntar;
-                        currentGun.transform.eulerAngles = currentRotation;
-                        break;
-                    case "shoot":
-                        StartCoroutine(newInmune());
-                        Rigidbody2D bullet = Instantiate(bulletPrefab,
-                            transform.position,
-                            currentGun.rotation);
-
-                        bullet.AddForce(-currentGun.right * missileForceShoot, ForceMode2D.Impulse);
-                        missileForceShoot = 0;
-                        if (isTurn)
-                        {
-                            StartCoroutine(LevelManager.instance.GetCombatManager().ChangeTurn(bullet.gameObject));
-                            isTurn = false;
-                            state = "null";
-                            iaIsPlay = false;
-                        }
-                        break;
-                }
-
-            }
+            }    
         }
         else
             currentGun.gameObject.SetActive(false);
@@ -146,10 +166,13 @@ public class PlayerControler : MonoBehaviour
                 missileForceShoot += Time.deltaTime * 8;
                 if (missileForceShoot >= missileForce)
                     missileForceShoot = 0;
-                Debug.Log(missileForceShoot);
+                //Debug.Log(missileForceShoot);
+                shootUI.gameObject.SetActive(true);
+                shootUI.value = missileForceShoot;
             }
             if (Input.GetKeyUp(KeyCode.Q))
             {
+                shootUI.gameObject.SetActive(false);
                 StartCoroutine(newInmune());
                 Rigidbody2D bullet = Instantiate(bulletPrefab,
                     transform.position,
@@ -204,7 +227,11 @@ public class PlayerControler : MonoBehaviour
         {
             if (!inmune)
             {
+                LevelManager.instance.GetCombatManager().ChangeLife(teamID);
                 wormHealth.ChangeHealth(-10);
+                life -= 10;
+                if(life <= 0)
+                    isLive = false;
 
                 if (isTurn)
                     WormManager.instance.NextWorm();
@@ -222,8 +249,25 @@ public class PlayerControler : MonoBehaviour
         state = "move";
         yield return new WaitForSeconds(timeWalk);
         anim.SetBool("IsWalking", false);
+        //Debug.Log(LevelManager.instance.GetCombatManager().TargetShoot(this.gameObject, teamID).name);
+        if (LevelManager.instance.GetCombatManager().TargetShoot(this.gameObject, teamID).transform.position.x < this.transform.position.x)
+        {
+            apuntar = Random.Range(-70f, 0f);
+            spriteRenderer.flipX = false;
+        }
+        else
+            apuntar = Random.Range(-180f, -120f);
         state = "apuntar";
         yield return new WaitForSeconds(1f);
+        if (Vector3.Distance(LevelManager.instance.GetCombatManager().TargetShoot(this.gameObject, teamID).transform.position, this.transform.position) < minDistanceIA[0])
+            missileForceShoot = Random.Range(minShotIA[0], missileForce);
+        else if (Vector3.Distance(LevelManager.instance.GetCombatManager().TargetShoot(this.gameObject, teamID).transform.position, this.transform.position) < minDistanceIA[1])
+            missileForceShoot = Random.Range(minShotIA[1], missileForce);
+        else if (Vector3.Distance(LevelManager.instance.GetCombatManager().TargetShoot(this.gameObject, teamID).transform.position, this.transform.position) < minDistanceIA[2])
+            missileForceShoot = Random.Range(minShotIA[2], missileForce);
+        else
+            missileForceShoot = Random.Range(missileForce/1.3f, missileForce);
+        Debug.Log(LevelManager.instance.GetCombatManager().TargetShoot(this.gameObject, teamID).name + " Distacia: " + Vector3.Distance(LevelManager.instance.GetCombatManager().TargetShoot(this.gameObject, teamID).transform.position, this.transform.position) + " Fuerza: " + missileForceShoot);
         state = "shoot";
     }
 

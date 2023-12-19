@@ -131,7 +131,12 @@ public class Ground : MonoBehaviour
             return;
 
         MakeAHole(collision.GetComponent<CircleCollider2D>());
+        GameObject temp = Instantiate(fire, collision.transform.position, collision.transform.rotation);
+        temp.transform.position = new Vector3(temp.transform.position.x,temp.transform.position.y, -10);
+        temp.transform.localScale = new Vector3(0.01f,0.01f,1);
+        Destroy(temp, 1f);
         Destroy(collision.gameObject, 0.1f);
+        
     }
 
 }
