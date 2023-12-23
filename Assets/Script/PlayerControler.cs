@@ -136,6 +136,8 @@ public class PlayerControler : MonoBehaviour
             }
             else
             {
+                isLive = false;
+                anim.SetBool("isDead", true);
                 LevelManager.instance.GetCombatManager().TurnChangeDead();
 
             }    
