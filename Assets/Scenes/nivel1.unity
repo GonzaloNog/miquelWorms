@@ -1300,6 +1300,18 @@ PrefabInstance:
     serializedVersion: 3
     m_TransformParent: {fileID: 0}
     m_Modifications:
+    - target: {fileID: 398952696536742134, guid: e0cfa8f515afc7f4ab0757704d119c2e, type: 3}
+      propertyPath: m_Size.x
+      value: 1.2
+      objectReference: {fileID: 0}
+    - target: {fileID: 398952696536742134, guid: e0cfa8f515afc7f4ab0757704d119c2e, type: 3}
+      propertyPath: m_Size.y
+      value: 1.2
+      objectReference: {fileID: 0}
+    - target: {fileID: 398952696536742134, guid: e0cfa8f515afc7f4ab0757704d119c2e, type: 3}
+      propertyPath: m_MaskInteraction
+      value: 2
+      objectReference: {fileID: 0}
     - target: {fileID: 2172470922696154925, guid: e0cfa8f515afc7f4ab0757704d119c2e, type: 3}
       propertyPath: m_Name
       value: Worm2
