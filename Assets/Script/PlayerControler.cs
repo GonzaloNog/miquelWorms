@@ -48,10 +48,16 @@ public class PlayerControler : MonoBehaviour
     //UI
     public Slider shootUI;
 
+    //fisica 
+    Rigidbody2D rb;
+    public float fuerzaDeImpulso = 10f;
+    public GameObject fireEfectGO;
+    private bool shootAnim = false;
+
     void Start()
     {
         spriteRenderer = GetComponent<SpriteRenderer>();
-
+        rb = GetComponent<Rigidbody2D>();
         wormHealth = GetComponent<WormHealth>();
         mainCam = Camera.main;
         anim = GetComponent<Animator>();
@@ -59,12 +65,21 @@ public class PlayerControler : MonoBehaviour
         shootUI.gameObject.SetActive(false);
         shootUI.maxValue = missileForce;
         wormHealth.setHealth(life);
+        setColorTeam();
     }
 
     // Update is called once per frame
     void Update()
     {
-
+        Debug.Log(rb.velocity);
+        if (rb.velocity.x != 0 || rb.velocity.y != 0)
+        {
+            if(!shootAnim)
+                currentGun.gameObject.SetActive(false);
+            anim.SetBool("isHit", true);
+        }
+        else
+            anim.SetBool("isHit", false);
         if (isTurn)
         {
             if (isLive)
@@ -117,6 +132,9 @@ public class PlayerControler : MonoBehaviour
                             break;
                         case "shoot":
                             StartCoroutine(newInmune());
+                            fireEfectGO.SetActive(true);
+                            shootAnim = true;
+                            StartCoroutine(fireEfect());
                             Rigidbody2D bullet = Instantiate(bulletPrefab,
                                 transform.position,
                                 currentGun.rotation);
@@ -137,12 +155,11 @@ public class PlayerControler : MonoBehaviour
             else
             {
                 isLive = false;
-                anim.SetBool("isDead", true);
                 LevelManager.instance.GetCombatManager().TurnChangeDead();
 
             }    
         }
-        else
+        else if(!shootAnim)
             currentGun.gameObject.SetActive(false);
     }
 
@@ -160,7 +177,7 @@ public class PlayerControler : MonoBehaviour
 
         float hor = Input.GetAxis("Horizontal");
 
-        if (hor == 0)
+        if (hor == 0 && rb.velocity.x == 0 && rb.velocity.y == 0)
         {
             currentGun.gameObject.SetActive(true);
             if (Input.GetKey(KeyCode.Q))
@@ -174,6 +191,9 @@ public class PlayerControler : MonoBehaviour
             }
             if (Input.GetKeyUp(KeyCode.Q))
             {
+                fireEfectGO.SetActive(true);
+                shootAnim = true;
+                StartCoroutine(fireEfect());
                 shootUI.gameObject.SetActive(false);
                 StartCoroutine(newInmune());
                 Rigidbody2D bullet = Instantiate(bulletPrefab,
@@ -193,13 +213,16 @@ public class PlayerControler : MonoBehaviour
         }
         else
         {
-            currentGun.gameObject.SetActive(false);
-            
+            if(rb.velocity.x == 0 && rb.velocity.y == 0)
+            {
+                if(!shootAnim)
+                    currentGun.gameObject.SetActive(false);
 
-            transform.position += Vector3.right * hor * Time.deltaTime * walkSpeed;
 
-            spriteRenderer.flipX = Input.GetAxis("Horizontal") > 0;
-            
+                transform.position += Vector3.right * hor * Time.deltaTime * walkSpeed;
+
+                spriteRenderer.flipX = Input.GetAxis("Horizontal") > 0;
+            }
         }
     }
 
@@ -229,15 +252,40 @@ public class PlayerControler : MonoBehaviour
         {
             if (!inmune)
             {
-                LevelManager.instance.GetCombatManager().ChangeLife(teamID);
-                wormHealth.ChangeHealth(-10);
-                life -= 10;
-                if(life <= 0)
+                life -= LevelManager.instance.dañoArma;
+                wormHealth.ChangeHealth(-LevelManager.instance.dañoArma);
+                if (life <= 0)
+                {
+                    anim.SetBool("isDead", true);
                     isLive = false;
+                }
+                LevelManager.instance.GetCombatManager().ChangeLife(teamID);
+
+                Vector2 bulletPosition = collision.transform.position;
+                Vector2 playerPosition = transform.position;
+
+                // Calcular la dirección entre la bala y el jugador
+                Vector2 direction = (playerPosition - bulletPosition).normalized;
+
+                // Aplicar fuerza al jugador en la dirección calculada
+                rb.AddForce(direction * fuerzaDeImpulso, ForceMode2D.Impulse);
 
                 if (isTurn)
                     WormManager.instance.NextWorm();
             }
+        }
+        else if(collision.gameObject.tag == "deadZone")
+        {
+            life = 0;
+            wormHealth.ChangeHealth(-LevelManager.instance.dañoArma);
+            if (life <= 0)
+            {
+                anim.SetBool("isDead", true);
+                isLive = false;
+            }
+            LevelManager.instance.GetCombatManager().ChangeLife(teamID);
+            if (isTurn)
+                WormManager.instance.NextWorm();
         }
     }
     IEnumerator newInmune()
@@ -271,6 +319,16 @@ public class PlayerControler : MonoBehaviour
             missileForceShoot = Random.Range(missileForce/1.3f, missileForce);
         Debug.Log(LevelManager.instance.GetCombatManager().TargetShoot(this.gameObject, teamID).name + " Distacia: " + Vector3.Distance(LevelManager.instance.GetCombatManager().TargetShoot(this.gameObject, teamID).transform.position, this.transform.position) + " Fuerza: " + missileForceShoot);
         state = "shoot";
+    }
+    IEnumerator fireEfect()
+    {
+        yield return new WaitForSeconds(0.5f);
+        fireEfectGO.SetActive(false);
+        shootAnim = false;
+    }
+    public void setColorTeam()
+    {
+        wormHealth.setColor(teamID);
     }
 
 

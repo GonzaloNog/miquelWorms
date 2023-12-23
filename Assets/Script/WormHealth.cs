@@ -32,6 +32,12 @@ public class WormHealth : MonoBehaviour
             health = 0;
 
         healthTxt.text = health.ToString();
+        if (health > 60)
+            healthTxt.color = Color.green;
+        else if (health > 30)
+            healthTxt.color = Color.yellow;
+        else
+            healthTxt.color = Color.red;
 
     }
     public void newName(string _name)
@@ -43,5 +49,16 @@ public class WormHealth : MonoBehaviour
         maxHealth = _health;
         health = maxHealth;
         healthTxt.text = health.ToString();
+    }
+    public void setColor(int teamID)
+    {
+        if(teamID == 1)
+        {
+            name.color = Color.blue;
+        }
+        else
+        {
+            name.color = Color.red;
+        }
     }
 }

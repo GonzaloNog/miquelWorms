@@ -9,6 +9,7 @@ public class LevelManager : MonoBehaviour
     public CombatManager combat;
     public UIManager Ui;
     public float timeTurn = 10f;
+    public int dañoArma = 10;
     private void Awake()
     {
         if(instance == null)
