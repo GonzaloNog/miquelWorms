@@ -12,11 +12,19 @@ public class PlayerControler : MonoBehaviour
     private Transform currentGun;
 
     public float walkSpeed = 1.0f;
+    private bool moveLeft = false;
+    private bool moveRight = false;
     public float maxRelativeVelocity = 6.0f;
     public float missileForce = 15.0f;
     public int life = 100;
     private float missileForceShoot = 0.0f;
     private bool inmune = false;
+    private Button bulletButton;
+    private Button leftButton;
+    private Button rightButton;
+    private Button upButton;
+    private Button downButton;
+    private Button fingerButton;
 
     private string state = "null";
     public string name = "null";
@@ -33,6 +41,9 @@ public class PlayerControler : MonoBehaviour
     public bool isTurn = false;
     public bool isLive = true;
     private WormHealth wormHealth;
+    private bool isFingerCoroutineRunning = false;
+    private bool isBulletDown = false;
+
 
     private Vector3 diff;
 
@@ -54,6 +65,8 @@ public class PlayerControler : MonoBehaviour
     public GameObject fireEfectGO;
     private bool shootAnim = false;
 
+
+
     void Start()
     {
         spriteRenderer = GetComponent<SpriteRenderer>();
@@ -66,13 +79,51 @@ public class PlayerControler : MonoBehaviour
         shootUI.maxValue = missileForce;
         wormHealth.setHealth(life);
         setColorTeam();
+
+        GameObject bulletObject = GameObject.Find("bulletButton");
+        GameObject leftObject = GameObject.Find("leftButton");
+        GameObject rightObject = GameObject.Find("rightButton");
+        GameObject upObject = GameObject.Find("upButton");
+        GameObject downObject = GameObject.Find("downButton");
+        GameObject fingerObject = GameObject.Find("fingerButton");
+
+        /*
+        bulletButton = bulletObject.GetComponent<Button>();
+        leftButton = leftObject.GetComponent<Button>();
+        rightButton = rightObject.GetComponent<Button>();
+        upButton = upObject.GetComponent<Button>();
+        downButton = downObject.GetComponent<Button>();
+        fingerButton = fingerObject.GetComponent<Button>();
+        */
+
+
+        if (bulletObject != null)
+        {
+            bulletButton = bulletObject.GetComponent<Button>();
+
+            if (bulletButton != null)
+            {
+                bulletButton.onClick.AddListener(buttonClick);
+            }
+            else
+            {
+                Debug.LogError("El objeto encontrado no tiene un componente Button.");
+            }
+        }
+        
+
+
     }
 
     // Update is called once per frame
     void Update()
     {
-        Debug.Log(rb.velocity);
-        if (rb.velocity.x != 0 || rb.velocity.y != 0)
+
+        bool originalFlipX = spriteRenderer.flipX;
+        //Debug.Log("FLIPX"+originalFlipX);
+
+       // Debug.Log(rb.velocity);
+        if (rb.velocity.x > 2f || rb.velocity.x < -2f || rb.velocity.y < -2f || rb.velocity.y > 2f)
         {
             if(!shootAnim)
                 currentGun.gameObject.SetActive(false);
@@ -175,12 +226,27 @@ public class PlayerControler : MonoBehaviour
 
     void MovementAndShooting() {
 
-        float hor = Input.GetAxis("Horizontal");
+        float hor = walkSpeed;
 
-        if (hor == 0 && rb.velocity.x == 0 && rb.velocity.y == 0)
+        if (moveLeft)
+        {
+            hor = -walkSpeed;   
+        }
+        else if (moveRight)
+        {
+            hor = walkSpeed;
+        }
+        else
+        {
+            hor = 0; 
+        }
+
+
+        if (hor == 0 && rb.velocity.x == 0 && rb.velocity.y == 0 && isFingerCoroutineRunning == false)
         {
             currentGun.gameObject.SetActive(true);
-            if (Input.GetKey(KeyCode.Q))
+            //if (Input.GetKey(KeyCode.Q))
+            if (Input.GetButton("bulletButton"))
             {
                 missileForceShoot += Time.deltaTime * 8;
                 if (missileForceShoot >= missileForce)
@@ -189,7 +255,7 @@ public class PlayerControler : MonoBehaviour
                 shootUI.gameObject.SetActive(true);
                 shootUI.value = missileForceShoot;
             }
-            if (Input.GetKeyUp(KeyCode.Q))
+            if (Input.GetButtonUp("bulletButton"))
             {
                 fireEfectGO.SetActive(true);
                 shootAnim = true;
@@ -228,20 +294,28 @@ public class PlayerControler : MonoBehaviour
 
     void SetAnimationState()
     {
-        float hor = Input.GetAxis("Horizontal");
-
-        //Debug.Log("Horizontal input: " + hor);
-
-        if (hor == 0)
-        {
-            anim.SetBool("IsWalking", false);
-        }
-        else
+        if (moveLeft || moveRight)
         {
             anim.SetBool("IsWalking", true);
             Vector3 headPosition = currentGun.position;
             headPosition.x += 0.1f; // Puedes ajustar este valor según tus necesidades
+            if (moveRight)
+            {
+                spriteRenderer.flipX = true;
+            }
+            else
+            {
+                spriteRenderer.flipX = false;
+            }
         }
+        else
+        {
+            StartCoroutine(finger());
+        }
+
+
+        //Debug.Log("Horizontal input: " + hor);
+
 
         //Debug.Log("IsWalking: " + anim.GetBool("IsWalking"));
     }
@@ -252,8 +326,8 @@ public class PlayerControler : MonoBehaviour
         {
             if (!inmune)
             {
-                life -= LevelManager.instance.dañoArma;
-                wormHealth.ChangeHealth(-LevelManager.instance.dañoArma);
+                life -= LevelManager.instance.weaponHurt;
+                wormHealth.ChangeHealth(-LevelManager.instance.weaponHurt);
                 if (life <= 0)
                 {
                     anim.SetBool("isDead", true);
@@ -277,7 +351,7 @@ public class PlayerControler : MonoBehaviour
         else if(collision.gameObject.tag == "deadZone")
         {
             life = 0;
-            wormHealth.ChangeHealth(-LevelManager.instance.dañoArma);
+            wormHealth.ChangeHealth(-LevelManager.instance.weaponHurt);
             if (life <= 0)
             {
                 anim.SetBool("isDead", true);
@@ -294,6 +368,27 @@ public class PlayerControler : MonoBehaviour
         yield return new WaitForSeconds(0.2f);
         inmune = false;
     }
+
+    IEnumerator finger()
+    {
+        
+        if (Input.GetKey("w"))
+        {
+            isFingerCoroutineRunning = true;
+            currentGun.gameObject.SetActive(false);
+            anim.SetBool("isFinger", true);
+        
+            yield return new WaitForSeconds(1f);
+            anim.SetBool("isFinger", false);
+            isFingerCoroutineRunning = false;
+        }
+        else
+        {
+            anim.SetBool("isFinger", false);
+            anim.SetBool("IsWalking", false);
+        }
+    }
+
     IEnumerator iaPlayer()
     {
         state = "move";
@@ -317,7 +412,7 @@ public class PlayerControler : MonoBehaviour
             missileForceShoot = Random.Range(minShotIA[2], missileForce);
         else
             missileForceShoot = Random.Range(missileForce/1.3f, missileForce);
-        Debug.Log(LevelManager.instance.GetCombatManager().TargetShoot(this.gameObject, teamID).name + " Distacia: " + Vector3.Distance(LevelManager.instance.GetCombatManager().TargetShoot(this.gameObject, teamID).transform.position, this.transform.position) + " Fuerza: " + missileForceShoot);
+        //Debug.Log(LevelManager.instance.GetCombatManager().TargetShoot(this.gameObject, teamID).name + " Distacia: " + Vector3.Distance(LevelManager.instance.GetCombatManager().TargetShoot(this.gameObject, teamID).transform.position, this.transform.position) + " Fuerza: " + missileForceShoot);
         state = "shoot";
     }
     IEnumerator fireEfect()
@@ -331,5 +426,38 @@ public class PlayerControler : MonoBehaviour
         wormHealth.setColor(teamID);
     }
 
+    public void pointerDownLeft()
+    {
+        moveLeft = true;
+    }
 
+    public void pointerUpLeft()
+    {
+        moveLeft = false;
+    }
+
+    public void pointerDownRight()
+    {
+        moveRight = true;
+    }
+
+    public void pointerUpRight()
+    {
+        moveRight = false;
+    }
+
+    void buttonClick()
+    {
+        Debug.Log("shooooooting");
+    }
+
+    void OnBulletDown()
+    {
+        isBulletDown = true;
+    }
+
+    void OnBulletUp()
+    {
+        isBulletDown = false;
+    }
 }
