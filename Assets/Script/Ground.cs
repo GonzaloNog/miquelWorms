@@ -23,7 +23,7 @@ public class Ground : MonoBehaviour
         spriteRenderer = GetComponent<SpriteRenderer>();
 
         cloneTexture = Instantiate(baseTexture);
-        cloneTexture.alphaIsTransparency = true;
+        //cloneTexture.alphaIsTransparency = true;
 
         UpdateTexture();
 

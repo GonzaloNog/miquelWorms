@@ -2,6 +2,7 @@ using JetBrains.Annotations;
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.EventSystems;
 
 public class CombatManager : MonoBehaviour
 {
@@ -89,6 +90,69 @@ public class CombatManager : MonoBehaviour
                 life += worms[a].life;
             }
         }
+        if(life <= 0)
+            LevelManager.instance.Ui.GameOver.SetActive(true);
         LevelManager.instance.Ui.newTeamLife(life,teamId);
     }
+    public PlayerControler getWormTurn()
+    {
+        for (int a = 0; a < worms.Length; a++)
+        {
+            if (worms[a].isTurn)
+                return worms[a];
+        }
+        return null;
+    }
+    public bool getWormIA()
+    {
+        for (int a = 0; a < worms.Length; a++)
+        {
+            if (worms[a].isTurn)
+                return worms[a].IA;
+        }
+        return false;
+    }
+    public void moveWorm(int moveDirection)
+    {
+        if (!getWormIA())
+        {
+            getWormTurn().MoveAndroid(moveDirection);
+        }
+    }
+    public void stopMoveWorm()
+    {
+        if (!getWormIA())
+        {
+            getWormTurn().moveStopAndroid();
+        }
+    }
+    public void apuntarWorm(float direccion)
+    {
+        if (!getWormIA())
+        {
+            getWormTurn().apuntarAndroid(direccion);
+        }
+    }
+    public void shootChangeWorm()
+    {
+        if (!getWormIA())
+        {
+            getWormTurn().shootChangeAndroid();
+        }
+    }
+    public void shootWorm()
+    {
+        if (!getWormIA())
+        {
+            getWormTurn().shootAndroid();
+        }
+    }
+    public void fingerAndroid()
+    {
+        if (!getWormIA())
+        {
+            getWormTurn().fingerAndroid();
+        }
+    }
+
 }

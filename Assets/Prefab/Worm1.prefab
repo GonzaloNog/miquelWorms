@@ -303,9 +303,10 @@ GameObject:
   - component: {fileID: 6704446350214735834}
   - component: {fileID: 8408360342633372054}
   - component: {fileID: 3240224204156238988}
+  - component: {fileID: 3756910891767932080}
   m_Layer: 0
   m_Name: Worm1
-  m_TagString: Untagged
+  m_TagString: Player
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
@@ -457,6 +458,7 @@ MonoBehaviour:
   shootUI: {fileID: 3304778497722842948}
   fuerzaDeImpulso: 2
   fireEfectGO: {fileID: 2376326768743781862}
+  speedRotation: 10
 --- !u!95 &8408360342633372054
 Animator:
   serializedVersion: 5
@@ -512,6 +514,41 @@ CapsuleCollider2D:
   m_UsedByComposite: 0
   m_Offset: {x: 0.032408237, y: -0.0002759695}
   m_Size: {x: 0.49502087, y: 0.5404787}
+  m_Direction: 0
+--- !u!70 &3756910891767932080
+CapsuleCollider2D:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2172470922696154925}
+  m_Enabled: 1
+  m_Density: 1
+  m_Material: {fileID: 0}
+  m_IncludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_ExcludeLayers:
+    serializedVersion: 2
+    m_Bits: 0
+  m_LayerOverridePriority: 0
+  m_ForceSendLayers:
+    serializedVersion: 2
+    m_Bits: 4294967295
+  m_ForceReceiveLayers:
+    serializedVersion: 2
+    m_Bits: 4294967295
+  m_ContactCaptureLayers:
+    serializedVersion: 2
+    m_Bits: 4294967295
+  m_CallbackLayers:
+    serializedVersion: 2
+    m_Bits: 4294967295
+  m_IsTrigger: 1
+  m_UsedByEffector: 0
+  m_UsedByComposite: 0
+  m_Offset: {x: -0.27896982, y: 0.025360942}
+  m_Size: {x: 0.6420604, y: 0.6737616}
   m_Direction: 0
 --- !u!1 &3414396606845420148
 GameObject:

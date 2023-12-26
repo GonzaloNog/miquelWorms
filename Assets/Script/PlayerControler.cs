@@ -1,5 +1,6 @@
 using System.Collections;
 using System.Collections.Generic;
+using Unity.VisualScripting;
 using UnityEngine;
 using UnityEngine.UI;
 
@@ -19,12 +20,7 @@ public class PlayerControler : MonoBehaviour
     public int life = 100;
     private float missileForceShoot = 0.0f;
     private bool inmune = false;
-    private Button bulletButton;
-    private Button leftButton;
-    private Button rightButton;
-    private Button upButton;
-    private Button downButton;
-    private Button fingerButton;
+    //private int actions
 
     private string state = "null";
     public string name = "null";
@@ -43,6 +39,8 @@ public class PlayerControler : MonoBehaviour
     private WormHealth wormHealth;
     private bool isFingerCoroutineRunning = false;
     private bool isBulletDown = false;
+    private bool fingerON = false;
+    private GameObject enemigo;
 
 
     private Vector3 diff;
@@ -58,12 +56,17 @@ public class PlayerControler : MonoBehaviour
 
     //UI
     public Slider shootUI;
-
+    
     //fisica 
     Rigidbody2D rb;
     public float fuerzaDeImpulso = 10f;
+    public float fuerzaFinger = 5f;
     public GameObject fireEfectGO;
     private bool shootAnim = false;
+
+    //Android
+    public float speedRotation = 10;
+    private bool flip = false;
 
 
 
@@ -79,47 +82,14 @@ public class PlayerControler : MonoBehaviour
         shootUI.maxValue = missileForce;
         wormHealth.setHealth(life);
         setColorTeam();
-
-        GameObject bulletObject = GameObject.Find("bulletButton");
-        GameObject leftObject = GameObject.Find("leftButton");
-        GameObject rightObject = GameObject.Find("rightButton");
-        GameObject upObject = GameObject.Find("upButton");
-        GameObject downObject = GameObject.Find("downButton");
-        GameObject fingerObject = GameObject.Find("fingerButton");
-
-        /*
-        bulletButton = bulletObject.GetComponent<Button>();
-        leftButton = leftObject.GetComponent<Button>();
-        rightButton = rightObject.GetComponent<Button>();
-        upButton = upObject.GetComponent<Button>();
-        downButton = downObject.GetComponent<Button>();
-        fingerButton = fingerObject.GetComponent<Button>();
-        */
-
-
-        if (bulletObject != null)
-        {
-            bulletButton = bulletObject.GetComponent<Button>();
-
-            if (bulletButton != null)
-            {
-                bulletButton.onClick.AddListener(buttonClick);
-            }
-            else
-            {
-                Debug.LogError("El objeto encontrado no tiene un componente Button.");
-            }
-        }
-        
-
-
+        flip = spriteRenderer.flipX;
     }
 
     // Update is called once per frame
     void Update()
     {
 
-        bool originalFlipX = spriteRenderer.flipX;
+        //bool originalFlipX = spriteRenderer.flipX;
         //Debug.Log("FLIPX"+originalFlipX);
 
        // Debug.Log(rb.velocity);
@@ -215,81 +185,104 @@ public class PlayerControler : MonoBehaviour
     }
 
     void RotateGun() {
+        if (!(Application.platform == RuntimePlatform.Android))
+        {
+            diff = mainCam.ScreenToWorldPoint(Input.mousePosition) - transform.position;
+            diff.Normalize();
 
-        diff = mainCam.ScreenToWorldPoint(Input.mousePosition) - transform.position;
-        diff.Normalize();
+            float rot_Z = Mathf.Atan2(diff.y, diff.x) * Mathf.Rad2Deg;
 
-        float rot_Z = Mathf.Atan2(diff.y, diff.x) * Mathf.Rad2Deg;
-
-        currentGun.rotation = Quaternion.Euler(0, 0, rot_Z + 180f);
+            currentGun.rotation = Quaternion.Euler(0, 0, rot_Z + 180f);
+        }
     }
 
     void MovementAndShooting() {
-
-        float hor = walkSpeed;
-
-        if (moveLeft)
+        float hor = Input.GetAxis("Horizontal");
+        if (!(Application.platform == RuntimePlatform.Android))
         {
-            hor = -walkSpeed;   
-        }
-        else if (moveRight)
-        {
-            hor = walkSpeed;
-        }
-        else
-        {
-            hor = 0; 
-        }
-
-
-        if (hor == 0 && rb.velocity.x == 0 && rb.velocity.y == 0 && isFingerCoroutineRunning == false)
-        {
-            currentGun.gameObject.SetActive(true);
-            //if (Input.GetKey(KeyCode.Q))
-            if (Input.GetButton("bulletButton"))
+            if (hor > 0)
             {
-                missileForceShoot += Time.deltaTime * 8;
-                if (missileForceShoot >= missileForce)
-                    missileForceShoot = 0;
-                //Debug.Log(missileForceShoot);
-                shootUI.gameObject.SetActive(true);
-                shootUI.value = missileForceShoot;
+                moveLeft = false;
+                moveRight = true;
             }
-            if (Input.GetButtonUp("bulletButton"))
+            else if (hor < 0)
             {
-                fireEfectGO.SetActive(true);
-                shootAnim = true;
-                StartCoroutine(fireEfect());
-                shootUI.gameObject.SetActive(false);
-                StartCoroutine(newInmune());
-                Rigidbody2D bullet = Instantiate(bulletPrefab,
-                    transform.position,
-                    currentGun.rotation);
-
-                bullet.AddForce(-currentGun.right * missileForceShoot, ForceMode2D.Impulse);
-                missileForceShoot = 0;
-                if (isTurn)
+                moveLeft = true;
+                moveRight = false;
+            }
+            else
+            {
+                moveLeft = false;
+                moveRight = false;
+            }
+            if (hor == 0 && rb.velocity.x == 0 && rb.velocity.y == 0 && isFingerCoroutineRunning == false)
+            {
+                if(!isFingerCoroutineRunning)
+                   currentGun.gameObject.SetActive(true);
+                if (Input.GetKeyDown(KeyCode.E))
                 {
-                    StartCoroutine(LevelManager.instance.GetCombatManager().ChangeTurn(bullet.gameObject));
-                    isTurn = false;
+                    isFingerCoroutineRunning = true;
+                    currentGun.gameObject.SetActive(false);
+                    if (fingerON && enemigo != null)
+                    {
+                        Vector2 bulletPosition = enemigo.transform.position;
+                        Vector2 playerPosition = transform.position;
+
+                        // Calcular la dirección entre la bala y el jugador
+                        Vector2 direction = (playerPosition - bulletPosition).normalized;
+
+                        // Aplicar fuerza al jugador en la dirección calculada
+                        enemigo.GetComponent<Rigidbody2D>().AddForce((direction * -1) * fuerzaFinger, ForceMode2D.Impulse);
+                        enemigo.GetComponent<PlayerControler>().ChangeLife(-5);
+                    }
+                    LevelManager.instance.GetCombatManager().TurnChangeDead();
+                    StartCoroutine(finger());
+                }
+                if (Input.GetKey(KeyCode.Q))
+                {
+                    missileForceShoot += Time.deltaTime * 8;
+                    if (missileForceShoot >= missileForce)
+                        missileForceShoot = 0;
+                    //Debug.Log(missileForceShoot);
+                    shootUI.gameObject.SetActive(true);
+                    shootUI.value = missileForceShoot;
+                }
+                if (Input.GetKeyUp(KeyCode.Q))
+                {
+                    fireEfectGO.SetActive(true);
+                    shootAnim = true;
+                    StartCoroutine(fireEfect());
+                    shootUI.gameObject.SetActive(false);
+                    StartCoroutine(newInmune());
+                    Rigidbody2D bullet = Instantiate(bulletPrefab,
+                        transform.position,
+                        currentGun.rotation);
+
+                    bullet.AddForce(-currentGun.right * missileForceShoot, ForceMode2D.Impulse);
+                    missileForceShoot = 0;
+                    if (isTurn)
+                    {
+                        StartCoroutine(LevelManager.instance.GetCombatManager().ChangeTurn(bullet.gameObject));
+                        isTurn = false;
+                    }
+                }
+
+
+            }
+            else
+            {
+                if (rb.velocity.x == 0 && rb.velocity.y == 0 && !isFingerCoroutineRunning)
+                {
+                    if (!shootAnim)
+                        currentGun.gameObject.SetActive(false);
+
+
+                    transform.position += Vector3.right * hor * Time.deltaTime * walkSpeed;
+
+                    spriteRenderer.flipX = Input.GetAxis("Horizontal") > 0;
                 }
             }
-          
-
-        }
-        else
-        {
-            if(rb.velocity.x == 0 && rb.velocity.y == 0)
-            {
-                if(!shootAnim)
-                    currentGun.gameObject.SetActive(false);
-
-
-                transform.position += Vector3.right * hor * Time.deltaTime * walkSpeed;
-
-                spriteRenderer.flipX = Input.GetAxis("Horizontal") > 0;
-            }
-        }
+        } 
     }
 
     void SetAnimationState()
@@ -307,12 +300,14 @@ public class PlayerControler : MonoBehaviour
             {
                 spriteRenderer.flipX = false;
             }
+            if(spriteRenderer.flipX != flip)
+            {
+                currentGun.transform.Rotate(Vector3.forward, 180f);
+                flip = spriteRenderer.flipX;
+            }
         }
         else
-        {
-            StartCoroutine(finger());
-        }
-
+            anim.SetBool("IsWalking", false);
 
         //Debug.Log("Horizontal input: " + hor);
 
@@ -322,17 +317,17 @@ public class PlayerControler : MonoBehaviour
 
     private void OnTriggerEnter2D(Collider2D collision)
     {
+        if(collision.gameObject.tag == "Player" && isTurn)
+        {
+            fingerON = true;
+            Debug.Log("EnRango");
+            enemigo = collision.gameObject;
+        }
         if (collision.CompareTag("Bullet"))
         {
             if (!inmune)
             {
-                life -= LevelManager.instance.weaponHurt;
-                wormHealth.ChangeHealth(-LevelManager.instance.weaponHurt);
-                if (life <= 0)
-                {
-                    anim.SetBool("isDead", true);
-                    isLive = false;
-                }
+                ChangeLife(-LevelManager.instance.weaponHurt);
                 LevelManager.instance.GetCombatManager().ChangeLife(teamID);
 
                 Vector2 bulletPosition = collision.transform.position;
@@ -362,6 +357,26 @@ public class PlayerControler : MonoBehaviour
                 WormManager.instance.NextWorm();
         }
     }
+    public void OnTriggerExit2D(Collider2D collision)
+    {
+        if (collision.gameObject.tag == "Player" && isTurn)
+        {
+            fingerON = false;
+            Debug.Log("Fuera de rango");
+            enemigo = null;
+        }
+    }
+    public void ChangeLife(int _life)
+    {
+        life += _life;
+        Debug.Log("vida perdida: " + _life);
+        wormHealth.ChangeHealth(_life);
+        if (life <= 0)
+        {
+            anim.SetBool("isDead", true);
+            isLive = false;
+        }
+    }
     IEnumerator newInmune()
     {
         inmune = true;
@@ -371,22 +386,10 @@ public class PlayerControler : MonoBehaviour
 
     IEnumerator finger()
     {
-        
-        if (Input.GetKey("w"))
-        {
-            isFingerCoroutineRunning = true;
-            currentGun.gameObject.SetActive(false);
-            anim.SetBool("isFinger", true);
-        
-            yield return new WaitForSeconds(1f);
-            anim.SetBool("isFinger", false);
-            isFingerCoroutineRunning = false;
-        }
-        else
-        {
-            anim.SetBool("isFinger", false);
-            anim.SetBool("IsWalking", false);
-        }
+        anim.SetBool("isFinger", true);
+        yield return new WaitForSeconds(0.5f);
+        anim.SetBool("isFinger", false);
+        isFingerCoroutineRunning = false;
     }
 
     IEnumerator iaPlayer()
@@ -399,6 +402,7 @@ public class PlayerControler : MonoBehaviour
         {
             apuntar = Random.Range(-70f, 0f);
             spriteRenderer.flipX = false;
+            Debug.Log("Flip Move3");
         }
         else
             apuntar = Random.Range(-180f, -120f);
@@ -425,39 +429,87 @@ public class PlayerControler : MonoBehaviour
     {
         wormHealth.setColor(teamID);
     }
-
-    public void pointerDownLeft()
+    public void MoveAndroid(int move)
     {
-        moveLeft = true;
+        currentGun.gameObject.SetActive(false);
+        transform.position += Vector3.right * move * Time.deltaTime * walkSpeed;
+        if (move > 0)
+        {
+            moveLeft = false;
+            moveRight = true;
+        }
+        else if (move < 0)
+        {
+            moveLeft = true;
+            moveRight = false;
+        }
+        else
+        {
+            moveLeft = false;
+            moveRight = false;
+        }
     }
-
-    public void pointerUpLeft()
+    public void moveStopAndroid()
     {
         moveLeft = false;
-    }
-
-    public void pointerDownRight()
-    {
-        moveRight = true;
-    }
-
-    public void pointerUpRight()
-    {
         moveRight = false;
+        currentGun.gameObject.SetActive(true);
+    }
+    public void apuntarAndroid(float move)
+    {
+        currentGun.gameObject.SetActive(true);
+        float rotation = (speedRotation * Time.deltaTime) * move;
+        if (spriteRenderer.flipX)
+            rotation = rotation * -1;
+        currentGun.transform.Rotate(Vector3.forward * rotation);
+        Debug.Log("apuntando" + rotation);
+    }
+    public void shootChangeAndroid()
+    {
+        missileForceShoot += Time.deltaTime * 8;
+        if (missileForceShoot >= missileForce)
+            missileForceShoot = 0;
+        //Debug.Log(missileForceShoot);
+        shootUI.gameObject.SetActive(true);
+        shootUI.value = missileForceShoot;
+    }
+    public void shootAndroid()
+    {
+        fireEfectGO.SetActive(true);
+        shootAnim = true;
+        StartCoroutine(fireEfect());
+        shootUI.gameObject.SetActive(false);
+        StartCoroutine(newInmune());
+        Rigidbody2D bullet = Instantiate(bulletPrefab,
+            transform.position,
+            currentGun.rotation);
+
+        bullet.AddForce(-currentGun.right * missileForceShoot, ForceMode2D.Impulse);
+        missileForceShoot = 0;
+        if (isTurn)
+        {
+            StartCoroutine(LevelManager.instance.GetCombatManager().ChangeTurn(bullet.gameObject));
+            isTurn = false;
+        }
+    }
+    public void fingerAndroid()
+    {
+            isFingerCoroutineRunning = true;
+            currentGun.gameObject.SetActive(false);
+            if (fingerON && enemigo != null)
+            {
+                Vector2 bulletPosition = enemigo.transform.position;
+                Vector2 playerPosition = transform.position;
+
+                // Calcular la dirección entre la bala y el jugador
+                Vector2 direction = (playerPosition - bulletPosition).normalized;
+
+                // Aplicar fuerza al jugador en la dirección calculada
+                enemigo.GetComponent<Rigidbody2D>().AddForce((direction * -1) * fuerzaFinger, ForceMode2D.Impulse);
+                enemigo.GetComponent<PlayerControler>().ChangeLife(-5);
+            }
+        LevelManager.instance.GetCombatManager().TurnChangeDead();
+        StartCoroutine(finger());
     }
 
-    void buttonClick()
-    {
-        Debug.Log("shooooooting");
-    }
-
-    void OnBulletDown()
-    {
-        isBulletDown = true;
-    }
-
-    void OnBulletUp()
-    {
-        isBulletDown = false;
-    }
 }
